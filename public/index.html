@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="sv">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>🛵🪿 Scooter Goose – Länksamling</title>
+		<style>
+			body {
+				font-family: sans-serif;
+				max-width: 700px;
+				margin: 2rem auto;
+				padding: 0 1rem;
+				background: #fafafa;
+				color: #222;
+			}
+			h1 {
+				font-size: 1.8rem;
+				margin-bottom: 0.25rem;
+			}
+			p.subtitle {
+				color: #666;
+				margin-top: 0;
+				margin-bottom: 2rem;
+			}
+			form {
+				display: flex;
+				flex-direction: column;
+				gap: 0.5rem;
+				margin-bottom: 2rem;
+				background: #fff;
+				padding: 1rem;
+				border: 1px solid #ddd;
+				border-radius: 6px;
+			}
+			input {
+				padding: 0.45rem 0.6rem;
+				font-size: 1rem;
+				border: 1px solid #ccc;
+				border-radius: 4px;
+			}
+			button[type="submit"] {
+				padding: 0.45rem 1rem;
+				font-size: 1rem;
+				background: #222;
+				color: #fff;
+				border: none;
+				border-radius: 4px;
+				cursor: pointer;
+				align-self: flex-start;
+			}
+			button[type="submit"]:hover {
+				background: #444;
+			}
+			.error {
+				color: #c00;
+				font-size: 0.9rem;
+				margin: 0;
+			}
+			ul {
+				list-style: none;
+				padding: 0;
+				margin: 0;
+			}
+			li {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				padding: 0.6rem 0;
+				border-bottom: 1px solid #eee;
+			}
+			.link-info a {
+				font-weight: 500;
+			}
+			.link-info .meta {
+				font-size: 0.82rem;
+				color: #888;
+				margin-left: 0.4rem;
+			}
+			.delete-btn {
+				background: none;
+				border: 1px solid #ccc;
+				border-radius: 4px;
+				padding: 0.2rem 0.6rem;
+				cursor: pointer;
+				color: #666;
+				font-size: 0.85rem;
+			}
+			.delete-btn:hover {
+				border-color: #c00;
+				color: #c00;
+			}
+			.empty {
+				color: #aaa;
+				font-style: italic;
+				padding: 0.5rem 0;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>🛵🪿 Scooter Goose</h1>
+		<p class="subtitle">Din personliga länksamling</p>
+
+		<form id="form">
+			<input id="title" type="text" placeholder="Titel" required />
+			<input id="url" type="url" placeholder="URL (https://...)" required />
+			<input id="category" type="text" placeholder="Kategori (valfritt)" />
+			<button type="submit">Lägg till länk</button>
+			<p class="error" id="error"></p>
+		</form>
+
+		<ul id="list"></ul>
+
+		<script>
+			const listEl = document.getElementById("list");
+			const form = document.getElementById("form");
+			const errorEl = document.getElementById("error");
+
+			const renderLinks = (links) => {
+				if (links.length === 0) {
+					listEl.innerHTML =
+						'<li class="empty">Inga sparade länkar ännu.</li>';
+					return;
+				}
+				listEl.innerHTML = links
+					.map(
+						(link) => `
+        <li>
+          <div class="link-info">
+            <a href="${link.url}" target="_blank" rel="noopener">${link.title}</a>
+            <span class="meta">${link.category}</span>
+          </div>
+          <button class="delete-btn" onclick="deleteLink(${link.id})">Ta bort</button>
+        </li>`,
+					)
+					.join("");
+			};
+
+			const fetchLinks = async () => {
+				const res = await fetch("/api/links");
+				const links = await res.json();
+				renderLinks(links);
+			};
+
+			const deleteLink = async (id) => {
+				await fetch(`/api/links/${id}`, { method: "DELETE" });
+				fetchLinks();
+			};
+
+			form.addEventListener("submit", async (e) => {
+				e.preventDefault();
+				errorEl.textContent = "";
+				const body = {
+					title: document.getElementById("title").value,
+					url: document.getElementById("url").value,
+					category: document.getElementById("category").value,
+				};
+				const res = await fetch("/api/links", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(body),
+				});
+				if (!res.ok) {
+					const data = await res.json();
+					errorEl.textContent = data.error;
+					return;
+				}
+				form.reset();
+				fetchLinks();
+			});
+
+			fetchLinks();
+		</script>
+	</body>
+</html>
