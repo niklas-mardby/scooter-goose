@@ -85,13 +85,15 @@ app.use((req, res) => {
 	res.status(404).json({ error: "Sidan hittades inte." });
 });
 
+const getErrorMessage = (err, env) => {
+	if (err.statusCode) return err.message;
+	if (env === "development") return err.message;
+	return "Internt serverfel.";
+};
+
 app.use((err, req, res, next) => {
 	const statusCode = err.statusCode ?? 500;
-	const message = err.statusCode
-		? err.message
-		: ENV === "development"
-			? err.message
-			: "Internt serverfel.";
+	const message = getErrorMessage(err, ENV);
 	if (!err.statusCode) console.error(err);
 	res.status(statusCode).json({ error: message });
 });
